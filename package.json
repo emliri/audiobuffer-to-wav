@@ -1,6 +1,6 @@
 {
   "name": "audiobuffer-to-wav",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "convert an AudioBuffer to .wav format",
   "main": "index.js",
   "license": "MIT",
