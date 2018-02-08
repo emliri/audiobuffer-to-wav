@@ -1,28 +1,59 @@
-module.exports = audioBufferToWav
-function audioBufferToWav (buffer, opt) {
-  opt = opt || {}
+/**
+ * @module AudiobufferToWav
+ */
 
-  var numChannels = buffer.numberOfChannels
-  var sampleRate = buffer.sampleRate
-  var format = opt.float32 ? 3 : 1
-  var bitDepth = format === 3 ? 32 : 16
+/**
+ * @param {AudioBuffer} buffer 
+ * @param {object} opt Nullable
+ * @param {number} [opt.float32]
+ * @returns {ArrayBuffer}
+ */
+export function audioBufferToWav (buffer, opt) {
+  const leftChannel = buffer.getChannelData(0)
+  const rightChannel = buffer.numChannels > 1 ? buffer.getChannelData(1) : null
 
-  var result
-  if (numChannels === 2) {
-    result = interleave(buffer.getChannelData(0), buffer.getChannelData(1))
-  } else {
-    result = buffer.getChannelData(0)
-  }
-
-  return encodeWAV(result, format, sampleRate, numChannels, bitDepth)
+  return audioChannelDataToWav(leftChannel, rightChannel, opt)
 }
 
-function encodeWAV (samples, format, sampleRate, numChannels, bitDepth) {
-  var bytesPerSample = bitDepth / 8
-  var blockAlign = numChannels * bytesPerSample
+/**
+ * @param {Float32Array} leftChannel 
+ * @param {Float32Array} rightChannel
+ * @param {object} opt Nullable
+ * @param {number} [opt.float32]
+ * @returns {ArrayBuffer}
+ */
+export function audioChannelDataToWav (leftChannel, rightChannel, opt) {
+  opt = opt || {}
 
-  var buffer = new ArrayBuffer(44 + samples.length * bytesPerSample)
-  var view = new DataView(buffer)
+  const format = opt.float32 ? 3 : 1
+  const bitDepth = format === 3 ? 32 : 16
+
+  let interleavedChannelData
+  if (leftChannel && rightChannel) {
+    interleavedChannelData = interleaveAudioChannelData(leftChannel, rightChannel)
+  } else if (leftChannel) {
+    interleavedChannelData = leftChannel
+  } else {
+    throw Error('Either both L&R (stereo) or left (mono) data has to be passed')
+  }
+
+  return encodeWAV(interleaveAudioChannelData, format, sampleRate, 2, bitDepth)
+}
+
+/**
+ * @param {Float32Array} samples 
+ * @param {number} format 1 or 3 (pcm16 (int) or float32)
+ * @param {number} sampleRate 
+ * @param {number} numChannels 
+ * @param {number} bitDepth 32 or 16
+ * @returns {ArrayBuffer}
+ */
+export function encodeWAV (samples, format, sampleRate, numChannels, bitDepth) {
+  const bytesPerSample = bitDepth / 8
+  const blockAlign = numChannels * bytesPerSample
+
+  const buffer = new ArrayBuffer(44 + samples.length * bytesPerSample)
+  const view = new DataView(buffer)
 
   /* RIFF identifier */
   writeString(view, 0, 'RIFF')
@@ -59,12 +90,17 @@ function encodeWAV (samples, format, sampleRate, numChannels, bitDepth) {
   return buffer
 }
 
-function interleave (inputL, inputR) {
-  var length = inputL.length + inputR.length
-  var result = new Float32Array(length)
+/**
+ * @param {Float32Array} inputL 
+ * @param {Float32Array} inputR 
+ * @returns {Float32Array}
+ */
+export function interleaveAudioChannelData (inputL, inputR) {
+  const length = inputL.length + inputR.length
+  const result = new Float32Array(length)
 
-  var index = 0
-  var inputIndex = 0
+  let index = 0
+  let inputIndex = 0
 
   while (index < length) {
     result[index++] = inputL[inputIndex]
@@ -74,14 +110,20 @@ function interleave (inputL, inputR) {
   return result
 }
 
+/**
+ * 
+ * @param {ArrayBuffer} output 
+ * @param {number} offset 
+ * @param {Float32Array} input 
+ */
 function writeFloat32 (output, offset, input) {
-  for (var i = 0; i < input.length; i++, offset += 4) {
+  for (let i = 0; i < input.length; i++, offset += 4) {
     output.setFloat32(offset, input[i], true)
   }
 }
 
 function floatTo16BitPCM (output, offset, input) {
-  for (var i = 0; i < input.length; i++, offset += 2) {
+  for (let i = 0; i < input.length; i++, offset += 2) {
     var s = Math.max(-1, Math.min(1, input[i]))
     output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true)
   }
