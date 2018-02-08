@@ -39,6 +39,12 @@ xhr({
 
 See [the demo](./demo/index.js) for an example of loading MP3, decoding it, and triggering a download of the encoded WAV file.
 
+Use this script to run the demo locally:
+
+```sh
+npm start
+```
+
 A more advanced example might be to write the file using Node and Electron or [hihat](https://www.npmjs.com/package/hihat), i.e. an easy way to convert MP3/OGG/etc to WAV.
 
 ## Usage
