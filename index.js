@@ -11,8 +11,9 @@
 export function audioBufferToWav (buffer, opt) {
   const leftChannel = buffer.getChannelData(0)
   const rightChannel = buffer.numChannels > 1 ? buffer.getChannelData(1) : null
+  const sampleRate = buffer.sampleRate
 
-  return audioChannelDataToWav(leftChannel, rightChannel, opt)
+  return audioChannelDataToWav(leftChannel, rightChannel, sampleRate, opt)
 }
 
 /**
@@ -22,7 +23,7 @@ export function audioBufferToWav (buffer, opt) {
  * @param {number} [opt.float32]
  * @returns {ArrayBuffer}
  */
-export function audioChannelDataToWav (leftChannel, rightChannel, opt) {
+export function audioChannelDataToWav (leftChannel, rightChannel, sampleRate, opt) {
   opt = opt || {}
 
   const format = opt.float32 ? 3 : 1
@@ -37,7 +38,7 @@ export function audioChannelDataToWav (leftChannel, rightChannel, opt) {
     throw Error('Either both L&R (stereo) or left (mono) data has to be passed')
   }
 
-  return encodeWAV(interleaveAudioChannelData, format, sampleRate, 2, bitDepth)
+  return encodeWAV(interleavedChannelData, format, sampleRate, 2, bitDepth)
 }
 
 /**
